@@ -66,42 +66,32 @@ class ClientNetwork:
 
     # Bu fonksiyon sunucudan gelen mesajları sürekli dinler,veri gelirse decode eder, json dict çevirir.
     def message_listen_thread(self):
-        # Socket varsa ve bağlantı aktifse döngü devam etsin.
-        while self.client_socket and self.is_connected:
-            try:
-                # Sunucudan en fazla 1024 byte veri alıyoruz.
-                message_bytes = self.client_socket.recv(1024)
+        try:
+            # Socket'i satır satır okuyabilmek için dosya benzeri hale getiriyoruz.
+            socket_file = self.client_socket.makefile("r", encoding="utf-8")
 
-            except ConnectionError:
-                # Bağlantı hatası olursa kopma işlemini yapıyoruz.
-                self.handle_disconnect()
-                return
+            while self.client_socket and self.is_connected:
+                # Bir satır = bir JSON mesajı
+                line = socket_file.readline()
 
-            except Exception:
-                # Beklenmeyen hata olursa yine kopmuş gibi davranıyoruz.
-                self.handle_disconnect()
-                return
+                # Boş satır geldiyse bağlantı kapanmış olabilir.
+                if not line:
+                    self.handle_disconnect()
+                    return
 
-            # Eğer boş veri geldiyse bağlantı kapanmış olabilir.
-            if not message_bytes:
-                self.handle_disconnect()
-                return
+                try:
+                    # Satırı JSON'dan sözlüğe çeviriyoruz.
+                    data = decode_message(line.strip())
+                except Exception:
+                    # Bozuk mesaj varsa atlayıp devam ediyoruz.
+                    continue
 
-            try:
-                # Gelen byte veriyi stringe çeviriyoruz.
-                message_text = message_bytes.decode("utf-8").strip()
+                # Mesajı ana uygulamaya iletiyoruz.
+                if self.on_message_received:
+                    self.on_message_received(data)
 
-                # JSON metni dicte çeviriyoruz.
-                data = decode_message(message_text)
-
-            except Exception:
-                # Mesaj bozuksa bu mesajı atlayıp dinlemeye devam ediyoruz.
-                continue
-
-            # Eğer mesaj geldiğinde çağrılacak fonksiyon tanımlıysa onu çağırıyoruz.
-            if self.on_message_received:
-                self.on_message_received(data)
-
+        except Exception:
+            self.handle_disconnect()
     # Bu fonksiyon sunucuya mesaj gönderir.
     def send_message(self, message_dict):
         # Eğer bağlantı yoksa mesaj gönderemeyiz.

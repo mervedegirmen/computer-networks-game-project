@@ -246,95 +246,84 @@ class SnakeLaddersServer:
     def message_listen_thread(self, client_socket, player_id):
         print(f"[SERVER] Listener thread started for Player {player_id}")
 
-        # İstemci bağlı olduğu sürece döngü devam eder.
-        while self.get_player_socket(player_id):
-            try:
-                # İstemciden en fazla 1024 byte veri okuyoruz.
-                message_bytes = client_socket.recv(1024)
+        try:
+            # Socket'i satır satır okuyabilmek için dosya benzeri hale getiriyoruz.
+            socket_file = client_socket.makefile("r", encoding="utf-8")
 
-            except ConnectionError:
-                # Bağlantı hatası varsa oyuncuyu sistemden çıkarıyoruz.
-                print(f"[SERVER] Connection error for Player {player_id}")
-                self.remove_player(player_id)
-                return
+            while self.get_player_socket(player_id):
+                # Bir satır = bir JSON mesajı
+                line = socket_file.readline()
 
-            # Eğer boş veri geldiyse bağlantı kopmuş olabilir.
-            if not message_bytes:
-                print(f"[SERVER] Empty message received from Player {player_id}")
-                self.remove_player(player_id)
-                return
+                # Boş satır geldiyse bağlantı kopmuş olabilir.
+                if not line:
+                    print(f"[SERVER] Empty message received from Player {player_id}")
+                    self.remove_player(player_id)
+                    return
 
-            try:
-                # Byte veriyi stringe çeviriyoruz.
-                message_text = message_bytes.decode("utf-8").strip()
-
-                # JSON metni sözlüğe çeviriyoruz.
-                data = decode_message(message_text)
-
-            except Exception as e:
-                # Mesaj çözümlenemezse hata dönüyoruz.
-                self.send_to_player(player_id, {
-                    "type": ERROR,
-                    "message": f"Invalid message format: {e}"
-                })
-                continue
-
-            # Gelen mesajın tipini alıyoruz.
-            message_type = data.get("type")
-
-            print(f"[SERVER] Received from Player {player_id}: {data}")
-
-            # Eğer oyuncu zar atmak istiyorsa bu blok çalışır.
-            if message_type == ROLL_DICE:
-                # Oyun verisi değişeceği için lock kullanıyoruz.
-                with self.lock:
-                    # GameLogic içinden hamle sonucunu alıyoruz.
-                    result = self.game.roll_for_player(player_id)
-
-                    # Eğer hamle başarısızsa sadece o oyuncuya hata gönderiyoruz.
-                    if not result["success"]:
-                        self.send_to_player(player_id, {
-                            "type": ERROR,
-                            "message": result["message"]
-                        })
-                        continue
-
-                    # Herkese güncel state gönderiyoruz.
-                    self.broadcast({
-                        "type": GAME_STATE,
-                        "state": self.game.get_state()
+                try:
+                    # Satırı JSON'dan sözlüğe çeviriyoruz.
+                    data = decode_message(line.strip())
+                except Exception as e:
+                    # Hatalı mesaj geldiyse sadece o oyuncuya hata dönüyoruz.
+                    self.send_to_player(player_id, {
+                        "type": ERROR,
+                        "message": f"Invalid message format: {e}"
                     })
+                    continue
 
-                    # Eğer oyun bittiyse ayrıca game_over mesajı da gönderiyoruz.
-                    if self.game.game_over:
+                # Mesaj tipini alıyoruz.
+                message_type = data.get("type")
+
+                print(f"[SERVER] Received from Player {player_id}: {data}")
+
+                # Oyuncu zar atmak istiyorsa
+                if message_type == ROLL_DICE:
+                    with self.lock:
+                        result = self.game.roll_for_player(player_id)
+
+                        # Hatalı bir durum varsa sadece o oyuncuya hata gönder
+                        if not result["success"]:
+                            self.send_to_player(player_id, {
+                                "type": ERROR,
+                                "message": result["message"]
+                            })
+                            continue
+
+                        # Herkese güncel oyun durumunu gönder
                         self.broadcast({
-                            "type": GAME_OVER,
-                            "winner": self.game.winner,
-                            "message": self.game.last_message,
+                            "type": GAME_STATE,
                             "state": self.game.get_state()
                         })
 
-            # Eğer yeniden başlatma isteği geldiyse bu blok çalışır.
-            elif message_type == RESTART_REQUEST:
-                # Oyun durumunu değiştireceğimiz için lock kullanıyoruz.
-                with self.lock:
-                    # Oyunu baştan başlatıyoruz.
-                    self.game.reset_game()
+                        # Oyun bittiyse ayrıca game_over gönder
+                        if self.game.game_over:
+                            self.broadcast({
+                                "type": GAME_OVER,
+                                "winner": self.game.winner,
+                                "message": self.game.last_message,
+                                "state": self.game.get_state()
+                            })
 
-                    # Herkese yeni oyunun başladığını gönderiyoruz.
-                    self.broadcast({
-                        "type": GAME_START,
-                        "message": "Game restarted.",
-                        "state": self.game.get_state()
+                # Oyunu yeniden başlatma isteği geldiyse
+                elif message_type == RESTART_REQUEST:
+                    with self.lock:
+                        self.game.reset_game()
+                        self.broadcast({
+                            "type": GAME_START,
+                            "message": "Game restarted.",
+                            "state": self.game.get_state()
+                        })
+
+                # Tanınmayan mesaj tipi gelirse
+                else:
+                    self.send_to_player(player_id, {
+                        "type": ERROR,
+                        "message": "Unknown message type."
                     })
 
-            # Tanımadığımız bir mesaj tipi geldiyse hata gönderiyoruz.
-            else:
-                self.send_to_player(player_id, {
-                    "type": ERROR,
-                    "message": "Unknown message type."
-                })
-
+        except Exception as error:
+            print(f"[SERVER] Error while handling Player {player_id}: {error}")
+            self.remove_player(player_id)
     # Bu fonksiyon sunucuyu başlatır.
     def start_server(self):
         print("[SERVER] Starting server...")

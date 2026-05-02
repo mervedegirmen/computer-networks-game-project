@@ -13,6 +13,12 @@ class GameLogic:
             PLAYER_2: 0,
         }
 
+        self.extra_turn_used = {
+            PLAYER_1: False,
+            PLAYER_2: False,
+        }
+
+
         self.current_turn = PLAYER_1
         self.game_over = False
         self.winner = None
@@ -38,7 +44,12 @@ class GameLogic:
         move_message = self.move_player(player_id, dice_value)
 
         if not self.game_over:
-            self.switch_turn()
+            if dice_value == 6 and not self.extra_turn_used[player_id]:
+                self.extra_turn_used[player_id] = True
+                self.last_message += f" Player {player_id} rolled 6 and gets one extra turn."
+            else:
+                self.extra_turn_used[player_id] = False
+                self.switch_turn()
 
         return {
             "success": True,

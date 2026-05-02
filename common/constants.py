@@ -1,7 +1,12 @@
 DEFAULT_HOST = "127.0.0.1"
 DEFAULT_PORT = 5000
+
 MAX_PLAYERS = 2
+BOARD_SIZE = 10
 FINAL_SQUARE = 100
+
+PLAYER_1 = 1
+PLAYER_2 = 2
 
 SNAKES = {
     16: 6,
@@ -13,7 +18,7 @@ SNAKES = {
     87: 24,
     93: 73,
     95: 75,
-    98: 78
+    98: 78,
 }
 
 LADDERS = {
@@ -25,5 +30,5 @@ LADDERS = {
     36: 44,
     51: 67,
     71: 91,
-    80: 100
+    80: 100,
 }

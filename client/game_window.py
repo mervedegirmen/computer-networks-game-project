@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
 
 from client.board_widget import BoardWidget
 from common.protocol import ROLL_DICE
+from client.dice_widget import DiceWidget
 
 
 class GameWindow(QWidget):
@@ -44,6 +45,8 @@ class GameWindow(QWidget):
 
         self.dice_label = QLabel("Dice: -")
         self.dice_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        self.dice_widget = DiceWidget()
+
 
         self.roll_button = QPushButton("Roll Dice")
         self.roll_button.setFixedHeight(45)
@@ -58,6 +61,7 @@ class GameWindow(QWidget):
         right_panel.addWidget(self.player_label)
         right_panel.addWidget(self.turn_label)
         right_panel.addWidget(self.dice_label)
+        right_panel.addWidget(self.dice_widget, alignment=Qt.AlignmentFlag.AlignCenter)
         right_panel.addWidget(self.roll_button)
         right_panel.addWidget(QLabel("Game Messages:"))
         right_panel.addWidget(self.message_box)
@@ -84,6 +88,7 @@ class GameWindow(QWidget):
         last_roll = state.get("last_roll")
         if last_roll is not None:
             self.dice_label.setText(f"Dice: {last_roll}")
+            self.dice_widget.set_final_value(last_roll)
 
         last_message = state.get("last_message")
         if last_message:

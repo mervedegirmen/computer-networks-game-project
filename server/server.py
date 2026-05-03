@@ -23,6 +23,7 @@ from common.protocol import (
     OPPONENT_LEFT,
     encode_message,
     decode_message,
+    RESTART_WAITING,
 )
 
 from game_logic import GameLogic
@@ -36,6 +37,7 @@ class GameServer:
         self.clients = {}
         self.game = GameLogic()
         self.running = True
+        self.restart_votes = set()
 
     def start(self):
         print("[SERVER] Starting server...")
@@ -143,12 +145,45 @@ class GameServer:
                     "state": state
                 })
 
+
         elif message_type == RESTART_REQUEST:
+
+            if not self.game.game_over:
+                self.send_to_player(player_id, {
+
+                    "type": ERROR,
+
+                    "message": "Game is not over yet."
+
+                })
+
+                return
+
+            self.restart_votes.add(player_id)
+
+            if len(self.restart_votes) < MAX_PLAYERS:
+                self.broadcast({
+
+                    "type": RESTART_WAITING,
+
+                    "message": f"Player {player_id} wants to play again. Waiting for other player..."
+
+                })
+
+                return
+
+            self.restart_votes.clear()
+
             self.game.reset_game()
+
             self.broadcast({
+
                 "type": GAME_START,
-                "message": "Game restarted!",
+
+                "message": "Both players accepted. New game started!",
+
                 "state": self.game.get_state()
+
             })
 
     def send_to_player(self, player_id, message):
@@ -169,6 +204,14 @@ class GameServer:
                 pass
 
             del self.clients[player_id]
+
+        self.restart_votes.discard(player_id)
+
+        if len(self.clients) == 0:
+            print("[SERVER] All players disconnected. Game reset.")
+            self.game.reset_game()
+            self.restart_votes.clear()
+            return
 
         self.broadcast({
             "type": OPPONENT_LEFT,

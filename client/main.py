@@ -23,6 +23,7 @@ from common.protocol import (
     ERROR,
     RESTART_REQUEST,
     OPPONENT_LEFT,
+    RESTART_WAITING,
 )
 
 
@@ -84,6 +85,7 @@ class ClientApp:
             if state:
                 self.game_window.update_game_state(state)
 
+
         elif message_type == GAME_OVER:
             state = message.get("state")
             winner = message.get("winner")
@@ -92,6 +94,13 @@ class ClientApp:
                 self.game_window.update_game_state(state)
 
             self.show_result_dialog(winner)
+
+
+        elif message_type == RESTART_WAITING:
+            self.game_window.add_message(
+                message.get("message", "Waiting for other player to play again...")
+            )
+
 
         elif message_type == ERROR:
             QMessageBox.warning(

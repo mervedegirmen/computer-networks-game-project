@@ -10,6 +10,7 @@ GAME_OVER = "game_over"
 ERROR = "error"
 RESTART_REQUEST = "restart_request"
 OPPONENT_LEFT = "opponent_left"
+RESTART_WAITING = "restart_waiting"
 
 
 def encode_message(data: dict) -> bytes:

@@ -28,7 +28,7 @@ class ResultDialog(QDialog):
         winner_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         winner_label.setStyleSheet("font-size: 16px;")
 
-        restart_button = QPushButton("Play Again")
+        restart_button = QPushButton("Request Play Again")
         restart_button.setFixedHeight(40)
         restart_button.clicked.connect(self.restart_clicked)
 

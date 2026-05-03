@@ -25,6 +25,10 @@ class DiceWidget(QWidget):
     def set_final_value(self, value):
         self.final_value = value
 
+        if not self.timer.isActive():
+            self.value = value
+            self.update()
+
     def animate(self):
         if self.animation_counter > 0:
             self.value = random.randint(1, 6)

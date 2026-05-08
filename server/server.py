@@ -9,6 +9,7 @@ if PROJECT_DIR not in sys.path:
 
 import socket
 from threading import Thread
+import requests
 
 from common.constants import DEFAULT_PORT, MAX_PLAYERS
 from common.protocol import (
@@ -38,6 +39,7 @@ class GameServer:
         self.game = GameLogic()
         self.running = True
         self.restart_votes = set()
+
 
     def start(self):
         print("[SERVER] Starting server...")

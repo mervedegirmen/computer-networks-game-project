@@ -51,6 +51,7 @@ class GameServer:
         print(f"[SERVER] Server started on port {self.port}")
         print("[SERVER] Waiting for players...")
 
+
         while self.running:
             client_socket, client_address = self.server_socket.accept()
 
@@ -64,6 +65,7 @@ class GameServer:
                 client_socket.close()
                 continue
 
+
             player_id = len(self.clients) + 1
             self.clients[player_id] = client_socket
 
@@ -75,6 +77,7 @@ class GameServer:
                     "player_id": player_id
                 })
             )
+
 
             if len(self.clients) < MAX_PLAYERS:
                 client_socket.sendall(
@@ -89,6 +92,7 @@ class GameServer:
                     "message": "Both players connected. Game started!",
                     "state": self.game.get_state()
                 })
+
 
             thread = Thread(target=self.handle_client, args=(player_id,))
             thread.daemon = True

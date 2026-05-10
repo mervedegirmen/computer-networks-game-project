@@ -118,7 +118,3 @@ class GameWindow(QWidget):
 
     def add_message(self, message):
         self.message_box.append(message)
-        from PyQt6 import QtWidgets, uic
-import sys
-from PyQt6 import QtWidgets, uic
-

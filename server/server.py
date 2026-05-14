@@ -208,7 +208,6 @@ class GameServer:
                 self.clients[player_id].close()
             except Exception:
                 pass
-
             del self.clients[player_id]
 
         self.restart_votes.discard(player_id)
@@ -219,11 +218,15 @@ class GameServer:
             self.restart_votes.clear()
             return
 
+        # --- YENİ EKLENEN KISIM ---
+        # Biri ayrıldığında oyunu mantıksal olarak bitiriyoruz
+        self.game.game_over = True
+        # --------------------------
+
         self.broadcast({
             "type": OPPONENT_LEFT,
-            "message": f"Player {player_id} left the game."
+            "message": f"Player {player_id} left the game. Game ended."
         })
-
 
 if __name__ == "__main__":
     server = GameServer()

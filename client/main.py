@@ -110,10 +110,15 @@ class ClientApp:  # Client uygulamasının tüm ekranlarını ve network bağlan
             )
 
         elif message_type == OPPONENT_LEFT:  # Eğer rakip oyuncu oyundan ayrıldıysa çalışır.
+            # --- YENİ EKLENEN KISIM ---
+            self.game_window.game_over = True # Kendi ekranında da oyunu bitmiş olarak işaretle
+            self.game_window.update_roll_button() # Zar atma butonunu anında "Game Over" moduna çekip kilitle
+            # --------------------------
+
             QMessageBox.warning(  # Kullanıcıya rakibin ayrıldığını bildiren uyarı gösterir.
                 self.game_window,  # Mesaj kutusunun oyun ekranı üzerinde görünmesini sağlar.
                 "Opponent Left",  # Uyarı penceresinin başlığını belirler.
-                message.get("message", "Opponent left the game.")  # Server mesajını alır, yoksa varsayılan mesajı gösterir.
+                message.get("message", "Opponent left the game.")  # Server mesajını alır.
             )
 
     def show_result_dialog(self, winner):  # Oyun bitiş penceresini gösterir.
